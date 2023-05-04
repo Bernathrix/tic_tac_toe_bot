@@ -4,7 +4,7 @@ from aiogram.types import ReplyKeyboardRemove, \
     InlineKeyboardMarkup, InlineKeyboardButton
 from game import Matchmaking, Storage
 
-bot_token = "5964510217:AAHnpCiMMYc0nsZQ42LuA3BcIxluTJ64icY"
+bot_token = "Our_token"
 
 bot = Bot(token=bot_token)
 dp = Dispatcher(bot)
@@ -98,14 +98,23 @@ async def instant_win(call: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda c: c.data == "stop_matchmaking")
 async def stop_search(callback_query: types.CallbackQuery):
+    user = callback_query['from']
+    if ctx.check_key(user) != True:
+        await callback_query.message.delete()
+        mes = await message.answer("Приносим извинения, но последняя сессия была завершена некорректно попробуйте начать еще раз", reply_markup=start_kb)
+        return ctx.set_key(message['from'], mes)
     await callback_query.message.edit_text("Добро пожаловать в крестики нолики", reply_markup=start_kb)
-    print("{} {} остановил поиск игры.".format(callback_query['from']['first_name'], callback_query['from']['last_name']))
+    print("{} {} остановил поиск игры.".format(user['first_name'], user['last_name']))
     return MatchmakingHelper.delete_player_from_pool(callback_query['from'])
 
 @dp.callback_query_handler(lambda c: c.data == "start_matchmaking")
 async def start_search(callback_query: types.CallbackQuery):
-    await callback_query.message.edit_text("Подбор противника начался, ожидайте.", reply_markup=stop_kb)
     user = callback_query['from']
+    if ctx.check_key(user) != True:
+        await callback_query.message.delete()
+        mes = await message.answer("Приносим извинения, но последняя сессия была завершена некорректно попробуйте начать еще раз", reply_markup=start_kb)
+        return ctx.set_key(message['from'], mes)
+    await callback_query.message.edit_text("Подбор противника начался, ожидайте.", reply_markup=stop_kb)
     print("{} {} начал поиск игры.".format(user['first_name'], user['last_name']))
     status = await MatchmakingHelper.start_matchmaking(user)
     if status != 0:
@@ -182,8 +191,8 @@ async def click(call: types.CallbackQuery):
                     ctx.set_key(status['loser'], new_mes_for_loser)
                 if status['match_result'] == 'draw':
                     print("Матч закончился: {} {} ничья с {} {} ".format(status['winner']['first_name'], status['winner']['last_name'], status['loser']['first_name'], status['loser']['last_name']))
-                    await mes_for_winner.edit_text("👤 У вас ничья с {} {} 👤 \n \n {}".format(status['loser']['first_name'], status['loser']['last_name'], toStr(status['game_field'])))
-                    await mes_for_loser.edit_text("👤 У вас ничья с {} {} 👤 \n \n {}".format(status['winner']['first_name'], status['winner']['last_name'], toStr(status['game_field'])))
+                    await mes_for_winner.edit_text("👤 У вас ничья с {} {} 👤 \n \n{}".format(status['loser']['first_name'], status['loser']['last_name'], toStr(status['game_field'])))
+                    await mes_for_loser.edit_text("👤 У вас ничья с {} {} 👤 \n \n{}".format(status['winner']['first_name'], status['winner']['last_name'], toStr(status['game_field'])))
                     new_mes_for_winner = await bot.send_message(status['winner']['id'], "Добро пожаловать в крестики нолики", reply_markup=start_kb)
                     new_mes_for_loser = await bot.send_message(status['loser']['id'], "Добро пожаловать в крестики нолики", reply_markup=start_kb)
                     ctx.set_key(status['winner'], new_mes_for_winner)
